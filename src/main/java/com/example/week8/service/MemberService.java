@@ -37,7 +37,7 @@ public class MemberService {
     private final LoginMemberRepository loginMemberRepository;
     private final MemberRepository memberRepository;
     private final TokenProvider tokenProvider;
-    private final JavaMailSender javaMailSender;
+    //private final JavaMailSender javaMailSender;
   //  private final RedisUtil redisUtil;
 
 
@@ -96,7 +96,7 @@ public class MemberService {
         // 로그인 시키기
         return login(member, response);
     }
-
+/*
     // 이메일 로그인
     public ResponseDto<?> emailLogin(EmailLoginRequestDto requestDto, HttpServletResponse response) {
         String email = requestDto.getEmail();
@@ -114,7 +114,7 @@ public class MemberService {
         return login(member, response);
     }
 
-
+*/
     // 로그인하기
     public ResponseDto<?> login(Member member, HttpServletResponse response) {
         TokenDto tokenDto = tokenProvider.generateTokenDto(member);
@@ -165,7 +165,7 @@ public class MemberService {
 
         return ResponseDto.success(loginMember.getAuthCode());
     }
-
+/*
     // EMAIL 인증번호 발급
     @Transactional
     public ResponseDto<?> sendEmailCode(AuthRequestDto requestDto) {
@@ -201,7 +201,7 @@ public class MemberService {
 //        javaMailSender.send(simpleMailMessage);
 
         return ResponseDto.success("인증번호 전송완료");
-    }
+    }*/
 
     // 인증번호 생성
     private String generateCode() {
@@ -237,7 +237,7 @@ public class MemberService {
 
         return ResponseDto.success("사용 가능한 닉네임 입니다.");
     }
-
+/*
     // 이메일 중복 검사
     public ResponseDto<?> checkEmail(DuplicationRequestDto requestDto) {
         Optional<Member> optionalMember = memberRepository.findByEmail(requestDto.getValue());
@@ -250,21 +250,21 @@ public class MemberService {
 
         return ResponseDto.success("사용 가능한 이메일 입니다.");
     }
-
+*/
     // 전화번호로 멤버 검색
     @Transactional(readOnly = true)
     public Member isPresentMember(String phoneNumber) {
         Optional<Member> optionalMember = memberRepository.findByPhoneNumber(phoneNumber);
         return optionalMember.orElse(null);
     }
-
+/*
     // 이메일로 멤버 검색
     @Transactional(readOnly = true)
     public Member isPresentEmail(String email) {
         Optional<Member> optionalMember = memberRepository.findByEmail(email);
         return optionalMember.orElse(null);
     }
-
+*/
     // 헤더에 토큰담기
     public void tokenToHeaders(TokenDto tokenDto, HttpServletResponse response) {
         response.addHeader("Authorization", "Bearer " + tokenDto.getAccessToken());

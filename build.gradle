@@ -50,6 +50,9 @@ dependencies {
 	//FCM
 //	implementation 'com.google.firebase:firebase-admin:9.0.0'
 
+	//JSON
+	implementation group: 'org.json', name: 'json', version: '20090211'
+
 }
 
 tasks.named('test') {

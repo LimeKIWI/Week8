@@ -29,7 +29,7 @@ public class UserController {
     public ResponseDto<?> updatePhoneNumber(@RequestBody LoginRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
         return userService.setPhoneNumber(requestDto, request, response);
     }
-
+/*
     // 이메일 설정
     @RequestMapping(value = "/api/user/email", method = RequestMethod.PUT)
     public ResponseDto<?> updateEmail(@RequestBody EmailLoginRequestDto requestDto, HttpServletRequest request) {
@@ -41,7 +41,7 @@ public class UserController {
     public ResponseDto<?> sendEmailCode(@RequestBody AuthRequestDto requestDto) {
         return userService.sendEmailCode(requestDto);
     }
-
+*/
     // 프로필 사진 수정
     @RequestMapping(value = "/api/user/profileimage", method = RequestMethod.PUT)
     public ResponseDto<?> updateProfileImage(@RequestBody ImgUrlRequestDto requestDto, HttpServletRequest request) {

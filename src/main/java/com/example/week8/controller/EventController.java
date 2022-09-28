@@ -5,6 +5,7 @@ import com.example.week8.dto.response.EventResponseDto;
 import com.example.week8.dto.response.ResponseDto;
 import com.example.week8.service.EventService;
 import lombok.RequiredArgsConstructor;
+import org.json.JSONException;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -132,5 +133,15 @@ public class EventController {
     @RequestMapping (value = "/api/events/date", method = RequestMethod.POST)
     public ResponseDto<?> chkDateTime(@RequestBody DuplicationRequestDto requestDto) {
         return eventService.chkDateTime(requestDto);
+    }
+
+    //약속 장소 좌표 반환
+    @RequestMapping(value= "/api/events/coordinate/{eventId}", method= RequestMethod.GET)
+    public ResponseDto<?> getCoordinate(@PathVariable Long eventId){
+        try {
+            return eventService.getCoordinate(eventId);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

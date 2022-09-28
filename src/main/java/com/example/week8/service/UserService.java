@@ -10,6 +10,7 @@ import com.example.week8.repository.MemberRepository;
 import com.example.week8.repository.RefreshTokenRepository;
 import com.example.week8.security.TokenProvider;
 import lombok.RequiredArgsConstructor;
+//import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,7 @@ public class UserService {
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final FileService fileService;
-    private final JavaMailSender javaMailSender;
+  //  private final JavaMailSender javaMailSender;
 
     private final double MAG_POINT_CREDIT = 0.00025;  // 포인트 환산 신용도 증가 배율 (0.00025가 기본)
 
@@ -102,7 +103,7 @@ public class UserService {
         }
         return ResponseDto.fail("중복된 전화번호 입니다.");
     }
-
+/*
     // 이메일 설정
     @Transactional
     public ResponseDto<?> setEmail(EmailLoginRequestDto requestDto, HttpServletRequest request) {
@@ -133,8 +134,8 @@ public class UserService {
                     .build());
         }
         return ResponseDto.fail("중복된 이메일 입니다.");
-    }
-
+    }*/
+/*
     @Transactional
     public ResponseDto<?> sendEmailCode(AuthRequestDto requestDto) {
         ResponseDto<?> getAuthCode = memberService.sendAuthCode(requestDto);
@@ -163,7 +164,7 @@ public class UserService {
 //        javaMailSender.send(simpleMailMessage);
 
         return ResponseDto.success("인증번호 전송완료");
-    }
+    }*/
 
     // RefreshToken 유효성 검사
     @Transactional

@@ -1,5 +1,6 @@
 package com.example.week8.service;
 
+import com.amazonaws.services.ec2.model.CreateSpotDatafeedSubscriptionRequest;
 import com.example.week8.domain.CheckinMember;
 import com.example.week8.domain.Event;
 import com.example.week8.domain.EventMember;
@@ -18,13 +19,27 @@ import com.example.week8.repository.EventRepository;
 import com.example.week8.repository.MemberRepository;
 import com.example.week8.security.TokenProvider;
 import com.example.week8.time.Time;
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -728,6 +743,54 @@ public class EventService {
 
     }
 
+    //약속 장소 좌표 반환
+    public ResponseDto<?> getCoordinate(Long eventId) throws JSONException {
+
+        Event event = isPresentEvent(eventId);
+        if (null == event) {
+            return ResponseDto.fail("ID_NOT_FOUND");
+        }
+        String place = event.getPlace();
+        String encodedPlace = URLEncoder.encode(place, StandardCharsets.UTF_8);
+
+        StringBuilder html = new StringBuilder();
+        String url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=" + encodedPlace; // encodeURIComponent로 인코딩 된 주소
+        String clientId = "5oqidl435p";
+        String clientSecret = "PmAqSZe1rOVcqMeOvLSgJctWbDqKBMy1pk16pY37";
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpGet request = new HttpGet(url);
+
+        request.addHeader("X-NCP-APIGW-API-KEY-ID", clientId);  //해더에 Clinet Id와 Client Secret을 넣습니다
+        request.addHeader("X-NCP-APIGW-API-KEY", clientSecret);
+
+        try {
+            HttpResponse response = client.execute(request);
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
+            String current = "";
+
+            while ((current = reader.readLine()) != null) {
+                html.append(current);
+            }
+            reader.close();
+
+        }
+        catch (ClientProtocolException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+      //  JSON
+        JSONObject responseJSON = new JSONObject(html.toString());
+
+        return ResponseDto.success(CoordinateResponseDto.builder()
+                .x(responseJSON.getJSONArray("addresses").getJSONObject(0).getDouble("x"))
+                .y(responseJSON.getJSONArray("addresses").getJSONObject(0).getDouble("y"))
+                .build()
+        );
+    }
+
     /**
      * eventMember 유효성 검사
      */
@@ -850,4 +913,5 @@ public class EventService {
         }
         return ResponseDto.success(member);
     }
+
 }
