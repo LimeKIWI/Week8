@@ -4,6 +4,7 @@ import com.example.week8.domain.Member;
 import com.example.week8.domain.RefreshToken;
 import com.example.week8.domain.UserDetailsImpl;
 import com.example.week8.domain.enums.Authority;
+import com.example.week8.dto.SignupInfoDto;
 import com.example.week8.dto.TokenDto;
 import com.example.week8.dto.request.AuthRequestDto;
 import com.example.week8.dto.request.DuplicationRequestDto;
@@ -40,7 +41,7 @@ public class MemberService {
     private final TokenProvider tokenProvider;
     private final JavaMailSender javaMailSender;
     private final EmitterRepositoryImpl emitterRepository;
-      private final RedisUtil redisUtil;
+    private final RedisUtil redisUtil;
 
 
     // 인증번호 확인
@@ -87,17 +88,14 @@ public class MemberService {
         Member member = isPresentMember(requestDto.getPhoneNumber());
         if (member == null) {
             // 없는 회원이라면
-            member = Member.builder()
+            member = new Member(SignupInfoDto.builder()
+//                    .kakaoId(null)
+//                    .naverId(null)
+//                    .imgUrl(null)
+//                    .email(null)
                     .phoneNumber(phoneNumber)
-                    .point(1000000)
-                    .pointOnDay(0L)
-                    .credit(100.0)
-                    .firstLogin(true)
-                    .password("@")
-                    .numOfDone(0)
-                    .numOfSelfEvent(0)
-                    .userRole(Authority.valueOf("ROLE_MEMBER"))
-                    .build();
+                    .role(Authority.ROLE_MEMBER)
+                    .build());
             memberRepository.save(member);
         }
         // 로그인 시키기
@@ -317,6 +315,8 @@ public class MemberService {
         TokenDto tokenDto = tokenProvider.generateTokenDto(member);
         refreshToken.updateValue(tokenDto.getRefreshToken());
         tokenToHeaders(tokenDto, response);
+        member.chkFirstLogin();
+
         return ResponseDto.success("재발급 완료");
     }
 

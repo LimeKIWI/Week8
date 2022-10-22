@@ -29,6 +29,7 @@ public class CommentService {
     private final ReportCommentRepository reportCommentRepository;
     private final PostRepository postRepository;
     private final TokenProvider tokenProvider;
+    private final SseEmitterService sseEmitterService;
 
     /**
      * 댓글 작성
@@ -56,6 +57,9 @@ public class CommentService {
 
         post.addCommentCounter();
         commentRepository.save(comment);
+
+        if(!post.getMember().getId().equals(member.getId()))
+            sseEmitterService.pubNewComment(post.getMember().getId(), post);
 
         return ResponseDto.success(CommentResponseDto.builder()
                 .id(comment.getId())

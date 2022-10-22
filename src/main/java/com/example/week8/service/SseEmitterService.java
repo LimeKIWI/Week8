@@ -2,12 +2,16 @@ package com.example.week8.service;
 
 import com.example.week8.domain.*;
 import com.example.week8.domain.enums.AlertType;
+import com.example.week8.dto.alert.ChatAlertDto;
+import com.example.week8.dto.alert.CommentAlertDto;
+import com.example.week8.dto.alert.InviteAlertDto;
 import com.example.week8.dto.response.ResponseDto;
 import com.example.week8.repository.EmitterRepositoryImpl;
 import com.example.week8.repository.EventMemberRepository;
 import com.example.week8.repository.EventRepository;
 import com.example.week8.repository.MemberRepository;
 import com.example.week8.security.TokenProvider;
+import com.example.week8.utils.time.Time;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -20,10 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -83,7 +85,7 @@ public class SseEmitterService {
         return ResponseDto.success("발신완료");
     }
 
-    // 보내기 테스트
+    // 보내기 테스트2
     public ResponseDto<?> publishTestTwo(Long memberId) {
         // 멤버 조회
         Member member = memberRepository.findById(memberId).orElse(null);
@@ -92,9 +94,12 @@ public class SseEmitterService {
         Map<String, SseEmitter> map = emitterRepository.findAllEmitterStartWithByMemberId(num);
 
         ExecutorService sseMvcExecutor = Executors.newSingleThreadExecutor();
+        String msg = "의 [제목] 약속에 초대되셨습니다.";
+        String eventId = "1";
+
         sseMvcExecutor.execute(() -> map.forEach((id, emitter) -> {
             try {
-                emitter.send("알림", MediaType.APPLICATION_JSON);
+                emitter.send(InviteAlertDto.builder().message(msg).eventId(eventId).build(), MediaType.APPLICATION_JSON);
                 log.info(id + " : 발신완료");
                 Thread.sleep(100);
             } catch (Exception e) {
@@ -102,6 +107,82 @@ public class SseEmitterService {
             }
         }));
         return ResponseDto.success("발신완료");
+    }
+
+    // 채팅방 초대 알림
+    public void pubEventInvite(Long memberId, Event event) {
+        Map<String, SseEmitter> map = emitterRepository.findAllEmitterStartWithByMemberId(memberId.toString());
+
+        String msg = Time.serializeEventAlertDate(event.getEventDateTime())+"의 ["+event.getTitle()+"] 약속에 초대되셨습니다.";
+        String eventId = event.getId().toString();
+
+        ExecutorService sseMvcExecutor = Executors.newSingleThreadExecutor();
+        sseMvcExecutor.execute(() -> map.forEach((id, emitter) -> {
+            try {
+                emitter.send(InviteAlertDto.builder().message(msg).eventId(eventId).build(), MediaType.APPLICATION_JSON);
+                log.info(id + " : 초대 알림 발신완료");
+                Thread.sleep(100);
+            } catch (Exception e) {
+                log.warn("disconnected id : {}", id);
+            }
+        }));
+    }
+
+    // 댓글 알림
+    public void pubNewComment(Long memberId, Post post) {
+        Map<String, SseEmitter> map = emitterRepository.findAllEmitterStartWithByMemberId(memberId.toString());
+
+        String msg = "댓글";
+        String postId = post.getId().toString();
+
+        ExecutorService sseMvcExecutor = Executors.newSingleThreadExecutor();
+        sseMvcExecutor.execute(() -> map.forEach((id, emitter) -> {
+            try {
+                emitter.send(CommentAlertDto.builder().message(msg).postId(postId).build(), MediaType.APPLICATION_JSON);
+                log.info(id + " : 댓글 알림 발신완료");
+                Thread.sleep(100);
+            } catch (Exception e) {
+                log.warn("disconnected id : {}", id);
+            }
+        }));
+    }
+
+    // 안읽은 채팅 알림
+    public void pubNewChat(Long memberId, Long chatRoomId) {
+        Map<String, SseEmitter> map = emitterRepository.findAllEmitterStartWithByMemberId(memberId.toString());
+
+        String msg = "채팅";
+        String eventId = chatRoomId.toString();
+
+        ExecutorService sseMvcExecutor = Executors.newSingleThreadExecutor();
+        sseMvcExecutor.execute(() -> map.forEach((id, emitter) -> {
+            try {
+                emitter.send(ChatAlertDto.builder().message(msg).eventId(eventId).build(), MediaType.APPLICATION_JSON);
+                log.info(id + " : 읽지않은 채팅 알림 발신완료");
+                Thread.sleep(100);
+            } catch (Exception e) {
+                log.warn("disconnected id : {}", id);
+            }
+        }));
+    }
+
+    // 약속 컨펌 알림
+    public void pubEventConfirm(Event event) {
+        List<EventMember> eventMemberList = eventMemberRepository.findAllByEventId(event.getId());
+        for(EventMember eventMember : eventMemberList) {
+            Map<String, SseEmitter> map = emitterRepository.findAllEmitterStartWithByMemberId(eventMember.getMember().getId().toString());
+
+            ExecutorService sseMvcExecutor = Executors.newSingleThreadExecutor();
+            sseMvcExecutor.execute(() -> map.forEach((id, emitter) -> {
+                try {
+                    emitter.send("["+event.getTitle()+"] 약속이 완료되었습니다.", MediaType.APPLICATION_JSON);
+                    log.info(id + " : 완료 알림 발신완료");
+                    Thread.sleep(100);
+                } catch (Exception e) {
+                    log.warn("disconnected id : {}", id);
+                }
+            }));
+        }
     }
 
     // 알림 구독
@@ -144,7 +225,7 @@ public class SseEmitterService {
     // 더미데이터 / 입장 알림 보내기
     private void sendDummyAlert(SseEmitter emitter, String emitterId) {
         try {
-            emitter.send("입장", MediaType.APPLICATION_JSON);
+            emitter.send(InviteAlertDto.builder().message("입장").build(), MediaType.APPLICATION_JSON);
         }
         catch (IOException e) {
             log.info(e.toString());
@@ -239,7 +320,6 @@ public class SseEmitterService {
     /**
      * 모듈
      */
-
     // 알림 메세지 만들기
     private String setContext(String text, AlertType type) {
         switch (type.toString()) {
@@ -258,37 +338,7 @@ public class SseEmitterService {
     // 식별가능한 id생성
     private String makeTimeIncludeId(String memberId) {
         return memberId + "_" + System.currentTimeMillis();
-//        return memberId;
     }
-
-//    // Emitter 저장
-//    public SseEmitter save(String emitterId, SseEmitter sseEmitter) {
-//        CLIENTS.put(emitterId, sseEmitter);
-//        return sseEmitter;
-//    }
-//
-//    // Emitter 지우기
-//    public void deleteById(String id) {
-//        CLIENTS.remove(id);
-//    }
-//
-//    // 맴버의 전체 Emitter찾기 (브라우저 탭이 여러개일 경우)
-//    public Map<String, SseEmitter> findAllEmitterStartWithByMemberId(String memberId) {
-//        return CLIENTS.entrySet().stream()
-//                .filter(entry -> entry.getKey().startsWith(memberId))
-//                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-//    }
-//
-//    // 회원의 Emitter 지우기 (로그아웃)
-//    public void deleteAllEmitterStartWithId(String memberId) {
-//        CLIENTS.forEach(
-//                (key, emitter) -> {
-//                    if (key.startsWith(memberId)) {
-//                        CLIENTS.remove(key);
-//                    }
-//                }
-//        );
-//    }
 
     /**
      * 멤버 유효성 검사
@@ -316,6 +366,4 @@ public class SseEmitterService {
         }
         return ResponseDto.success(member);
     }
-
-
 }
